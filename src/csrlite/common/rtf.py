@@ -15,6 +15,7 @@ def create_rtf_table_n_pct(
     source: list[str] | str | None,
     borders_2: bool = True,
     orientation: str = "landscape",
+    hanging_indent: list[int] | None = None,
 ) -> RTFDocument:
     """
     Create a standardized RTF table document with 1 or 2 header rows.
@@ -29,6 +30,9 @@ def create_rtf_table_n_pct(
         source: Source string or list of source strings.
         borders_2: Whether to show borders for the second header row. Defaults to True.
         orientation: Page orientation, "landscape" or "portrait". Defaults to "landscape".
+        hanging_indent: Optional list of hanging indent values in twips for each column.
+            When specified, wrapped lines are indented by this amount while the first
+            line stays at the left margin. Use values like 200 for ~0.14 inch indent.
 
     Returns:
         RTFDocument object.
@@ -69,10 +73,11 @@ def create_rtf_table_n_pct(
         "rtf_page": RTFPage(orientation=orientation),
         "rtf_title": RTFTitle(text=title_list),
         "rtf_column_header": headers,
-        "rtf_body": RTFBody(
-            col_rel_width=col_widths,
+        "rtf_body": _create_rtf_body(
+            col_widths=col_widths,
             text_justification=["l"] + ["c"] * (n_cols - 1),
-            border_left=["single"] * n_cols,
+            hanging_indent=hanging_indent,
+            n_cols=n_cols,
         ),
     }
 
@@ -85,6 +90,28 @@ def create_rtf_table_n_pct(
     return RTFDocument(**rtf_components)
 
 
+def _create_rtf_body(
+    col_widths: list[float],
+    text_justification: list[str],
+    hanging_indent: list[int] | None,
+    n_cols: int,
+) -> RTFBody:
+    """Create RTFBody with optional hanging indent support."""
+    body_kwargs: dict[str, Any] = {
+        "col_rel_width": col_widths,
+        "text_justification": text_justification,
+        "border_left": ["single"] * n_cols,
+    }
+
+    if hanging_indent is not None:
+        # Hanging indent: left margin for all lines, negative first-line indent
+        # pulls the first line back to the left margin
+        body_kwargs["text_indent_left"] = hanging_indent
+        body_kwargs["text_indent_first"] = [-x for x in hanging_indent]
+
+    return RTFBody(**body_kwargs)
+
+
 def create_rtf_listing(
     df: pl.DataFrame,
     col_header: list[str],
@@ -93,6 +120,7 @@ def create_rtf_listing(
     footnote: list[str] | str | None,
     source: list[str] | str | None,
     orientation: str = "landscape",
+    hanging_indent: list[int] | None = None,
 ) -> RTFDocument:
     """
     Create a standardized RTF listing document.
@@ -121,10 +149,11 @@ def create_rtf_listing(
         "rtf_page": RTFPage(orientation=orientation),
         "rtf_title": RTFTitle(text=title_list),
         "rtf_column_header": headers,
-        "rtf_body": RTFBody(
-            col_rel_width=col_widths,
+        "rtf_body": _create_rtf_body(
+            col_widths=col_widths,
             text_justification=["l"] * n_cols,
-            border_left=["single"] * n_cols,
+            hanging_indent=hanging_indent,
+            n_cols=n_cols,
         ),
     }
 
