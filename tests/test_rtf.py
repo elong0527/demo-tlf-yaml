@@ -103,4 +103,3 @@ class TestRTF(unittest.TestCase):
         self.assertIsInstance(doc, RTFDocument)
         doc.write_rtf(str(self.output_file))
         self.assertTrue(self.output_file.exists())
-
