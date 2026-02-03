@@ -6,7 +6,7 @@ from pathlib import Path
 import polars as pl
 from rtflite import RTFDocument
 
-from csrlite.common.rtf import create_rtf_table_n_pct
+from csrlite.common.rtf import create_rtf_listing, create_rtf_table_n_pct
 
 
 class TestRTF(unittest.TestCase):
@@ -17,6 +17,12 @@ class TestRTF(unittest.TestCase):
             {
                 "Col1": ["A", "B"],
                 "Col2": [1, 2],
+            }
+        )
+        self.df_long = pl.DataFrame(
+            {
+                "Description": ["Short text", "A very long description text"],
+                "Value": ["10", "20"],
             }
         )
 
@@ -64,3 +70,37 @@ class TestRTF(unittest.TestCase):
 
         doc.write_rtf(str(self.output_file))
         self.assertTrue(self.output_file.exists())
+
+    def test_create_rtf_table_with_hanging_indent(self) -> None:
+        """Test create_rtf_table_n_pct with hanging_indent parameter."""
+        doc = create_rtf_table_n_pct(
+            df=self.df_long,
+            col_header_1=["Description", "Value"],
+            col_header_2=None,
+            col_widths=[2.0, 1.0],
+            title="Hanging Indent Test",
+            footnote=None,
+            source=None,
+            hanging_indent=[200, 0],  # 200 twips for first column
+        )
+
+        self.assertIsInstance(doc, RTFDocument)
+        doc.write_rtf(str(self.output_file))
+        self.assertTrue(self.output_file.exists())
+
+    def test_create_rtf_listing_with_hanging_indent(self) -> None:
+        """Test create_rtf_listing with hanging_indent parameter."""
+        doc = create_rtf_listing(
+            df=self.df_long,
+            col_header=["Description", "Value"],
+            col_widths=[2.0, 1.0],
+            title="Listing with Hanging Indent",
+            footnote="Test footnote",
+            source="Test source",
+            hanging_indent=[200, 0],
+        )
+
+        self.assertIsInstance(doc, RTFDocument)
+        doc.write_rtf(str(self.output_file))
+        self.assertTrue(self.output_file.exists())
+
